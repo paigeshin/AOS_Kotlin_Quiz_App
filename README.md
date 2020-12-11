@@ -1,3 +1,10 @@
+# Properties - Explanation
+
+- ScrollView
+    - fillViewport: true
+
+    ⇒ "if you set this value to true, it automatically adjust to even smaller screens"
+
 # Setting Up Project
 
 ### Manifest
@@ -257,4 +264,226 @@ object Constants {
     // END
 }
 // END
+```
+
+# Layout
+
+### ProgressBar
+
+```xml
+<ProgressBar
+                android:id="@+id/progressBar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:max="10"
+                android:minHeight="50dp"
+                android:progress="0"
+                android:indeterminate="false"/>
+```
+
+### XML in drawable
+
+- correct_option_border_bg
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<!--TODO (STEP 2: A custom border background for the default options view.)-->
+<!--START-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <solid android:color="@android:color/holo_green_light" />
+
+    <corners android:radius="5dp" />
+</shape>
+<!--END-->
+```
+
+- wrong_option_border_bg
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<!--TODO (STEP 2: A custom border background for the default options view.)-->
+<!--START-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <solid android:color="@android:color/holo_red_light" />
+
+    <corners android:radius="5dp" />
+</shape>
+<!--END-->
+```
+
+- default_option_border_bg
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<!--TODO (STEP 2: A custom border background for the default options view.)-->
+<!--START-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <stroke
+        android:width="1dp"
+        android:color="#E8E8E8" />
+
+    <solid android:color="@android:color/white" />
+
+    <corners android:radius="5dp" />
+</shape>
+<!--END-->
+```
+
+# Basic Logic for QuizQuestion
+
+```kotlin
+package com.example.quizapp
+
+import android.graphics.Color
+import android.graphics.Typeface
+import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
+import android.view.View
+import android.widget.TextView
+import android.widget.Toast
+import androidx.core.content.ContextCompat
+import kotlinx.android.synthetic.main.activity_quiz_question.*
+
+class QuizQuestionActivity : AppCompatActivity(), View.OnClickListener {
+
+    private var mCurrentPosition: Int = 0
+    private var mQuestionList: ArrayList<Question>? = null
+    private var mSelectedOptionPosition: Int = 0
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_quiz_question)
+
+        mCurrentPosition =  1
+
+        mQuestionList = Constants.getQuestions()
+        setQuestion()
+
+        tvOptionOne.setOnClickListener(this)
+        tvOptionTwo.setOnClickListener(this)
+        tvOptionThree.setOnClickListener(this)
+        tvOptionFour.setOnClickListener(this)
+        btn_submit.setOnClickListener(this)
+
+    }
+
+    private fun setQuestion() {
+
+        val question: Question = mQuestionList!!.get(mCurrentPosition - 1)
+
+        defaultOptionView()
+
+        if(mCurrentPosition == mQuestionList!!.size) {
+            btn_submit.text = "FINISH"
+        } else  {
+            btn_submit.text = "SUBMIT"
+        }
+
+        progressBar.progress = mCurrentPosition
+        tvCounter.text = "$mCurrentPosition/${progressBar.max}"
+
+        tvQuestion.text = question.question
+        ivImage.setImageResource(question.image)
+        tvOptionOne.text = question.optionOne
+        tvOptionTwo.text = question.optionTwo
+        tvOptionThree.text = question.optionThree
+        tvOptionFour.text = question.optionFour
+    }
+
+    // set default UI for buttons
+    private fun defaultOptionView() {
+        val options = ArrayList<TextView>()
+        options.add(0, tvOptionOne)
+        options.add(1, tvOptionTwo)
+        options.add(2, tvOptionThree)
+        options.add(3, tvOptionFour)
+        for(option in options) {
+            option.setTextColor(Color.parseColor("#7A8089"))
+            option.typeface = Typeface.DEFAULT
+            option.background = ContextCompat.getDrawable(this, R.drawable.default_option_border_bg)
+        }
+    }
+
+    // handle multiple button events
+    override fun onClick(v: View?) {
+
+        when(v?.id) {
+            R.id.tvOptionOne -> {
+                selectedOptionView(tvOptionOne, 0)
+            }
+            R.id.tvOptionTwo -> {
+                selectedOptionView(tvOptionTwo, 1)
+            }
+            R.id.tvOptionThree -> {
+                selectedOptionView(tvOptionThree, 2)
+            }
+            R.id.tvOptionFour -> {
+                selectedOptionView(tvOptionFour, 3)
+            }
+            R.id.btn_submit -> {
+                //User not selected  option
+                if(mSelectedOptionPosition == 0) {
+                    mCurrentPosition++
+
+                    when{
+                        mCurrentPosition <= mQuestionList!!.size -> {
+                            setQuestion()
+                        } else -> {
+                            Toast.makeText(this, "You have s uccesfully c ompleted the Quiz", Toast.LENGTH_LONG).show()
+                        }
+                    }
+
+                } else {
+
+                    val question = mQuestionList?.get(mCurrentPosition - 1)
+                    if(question!!.correctAnswer != mSelectedOptionPosition) {
+                        answerView(mSelectedOptionPosition, R.drawable.wrong_option_border_bg)
+                    }
+                    answerView(mSelectedOptionPosition, R.drawable.correct_option_border_bg)
+                    if(mCurrentPosition == mQuestionList!!.size) {
+                        btn_submit.text = "FINISH"
+                    } else {
+                        btn_submit.text = "GO TO NEXT QUESTION"
+                    }
+                    mSelectedOptionPosition = 0
+
+                }
+            }
+        }
+    }
+
+    private fun answerView(answer: Int, drawableView: Int) {
+        when(answer) {
+            1 -> {
+                tvOptionOne.background = ContextCompat.getDrawable(this, drawableView)
+            }
+            2 -> {
+                tvOptionTwo.background = ContextCompat.getDrawable(this, drawableView)
+            }
+            3 -> {
+                tvOptionThree.background = ContextCompat.getDrawable(this, drawableView)
+            }
+            4 -> {
+                tvOptionFour.background = ContextCompat.getDrawable(this, drawableView)
+            }
+        }
+    }
+
+    private fun selectedOptionView(tv: TextView, selectedOptionNumber: Int) {
+        defaultOptionView() //reset button designs
+        mSelectedOptionPosition = selectedOptionNumber
+        tv.setTextColor(Color.parseColor("#363A43"))
+        tv.setTypeface(tv.typeface, Typeface.BOLD)
+        tv.background = ContextCompat.getDrawable(this, R.drawable.default_option_border_bg)
+    }
+
+}
 ```
